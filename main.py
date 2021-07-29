@@ -1,4 +1,5 @@
 import sqlite3
+from functools import partial
 
 
 class Student:
@@ -71,6 +72,12 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class Ui_MainWindow(object):
+    def __init__(self):
+        self.list_of_student = []
+        self.list_of_rating = []
+        self.datatable_list = []
+        self.list_of_class = []
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(712, 644)
@@ -101,10 +108,11 @@ class Ui_MainWindow(object):
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 699, 589))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
+
         self.tableWidget = QtWidgets.QTableWidget(self.scrollAreaWidgetContents)
         self.tableWidget.setGeometry(QtCore.QRect(0, 0, 701, 581))
         self.tableWidget.setObjectName("tableWidget")
-        self.tableWidget.setColumnCount(7)
+        self.tableWidget.setColumnCount(8)
         self.tableWidget.setRowCount(0)
         item = QtWidgets.QTableWidgetItem()
         self.tableWidget.setHorizontalHeaderItem(0, item)
@@ -121,44 +129,46 @@ class Ui_MainWindow(object):
         item = QtWidgets.QTableWidgetItem()
         self.tableWidget.setHorizontalHeaderItem(6, item)
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+        item = QtWidgets.QTableWidgetItem()
+        self.tableWidget.setHorizontalHeaderItem(7, item)
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+
+        self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
+        self.verticalLayoutWidget.hide()
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(170, 30, 221, 81))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.sort_averege_score_pannel = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.sort_averege_score_pannel.setContentsMargins(0, 0, 0, 0)
+        self.sort_averege_score_pannel.setObjectName("sort_averege_score_pannel")
+        self.tolowest = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.tolowest.setStyleSheet("background-color: rgb(33, 255, 197);")
+        self.tolowest.setObjectName("tolowest")
+        self.sort_averege_score_pannel.addWidget(self.tolowest)
+        self.tohighest = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.tohighest.setStyleSheet("background-color: rgb(34, 255, 219);")
+        self.tohighest.setObjectName("tohighest")
+        self.sort_averege_score_pannel.addWidget(self.tohighest)
+
+        self.panel_of_class = QtWidgets.QWidget(self.centralwidget)
+        self.panel_of_class.setObjectName("panel_of_class")
+        self.panel_of_class.setGeometry(QtCore.QRect(405, 30, 155, 81))
+        self.panel_of_class_layout = QtWidgets.QVBoxLayout(self.panel_of_class)
+        self.panel_of_class_layout.setContentsMargins(0, 0, 0, 0)
+        self.panel_of_class_layout.setObjectName("panel_of_class_layout")
+        self.panel_of_class.hide()
+
+        MainWindow.setCentralWidget(self.centralwidget)
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-    def retranslateUi(self, MainWindow):
-        _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.add_student.setText(_translate("MainWindow", "добавить ученика"))
-        self.sort_by_rating.setText(_translate("MainWindow", "сортировать по успеваемости"))
-        self.sort_by_class.setText(_translate("MainWindow", "вывести класс"))
-        self.find_student.setText(_translate("MainWindow", "найти ученика"))
-        item = self.tableWidget.horizontalHeaderItem(0)
-        item.setText(_translate("MainWindow", "id"))
-        item = self.tableWidget.horizontalHeaderItem(1)
-        item.setText(_translate("MainWindow", "Имя"))
-        item = self.tableWidget.horizontalHeaderItem(2)
-        item.setText(_translate("MainWindow", "Фамилия"))
-        item = self.tableWidget.horizontalHeaderItem(3)
-        item.setText(_translate("MainWindow", "математика"))
-        item = self.tableWidget.horizontalHeaderItem(4)
-        item.setText(_translate("MainWindow", "физика"))
-        item = self.tableWidget.horizontalHeaderItem(5)
-        item.setText(_translate("MainWindow", "информатика"))
-        item = self.tableWidget.horizontalHeaderItem(6)
-        item.setText(_translate("MainWindow", "Средний балл"))
-
-
-class MyMainWindow(Ui_MainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setupUi(MainWindow)
-        self.list_of_student = []
-        self.list_of_rating = []
-        self.datatable_list = []
         self.get_datatable_list()
         self.send_datatable_to_table()
-        self.add_student.setText("ok")
+        self.sort_by_rating.clicked.connect(lambda: self.show_sort_score_pannel())
+        self.tohighest.clicked.connect(lambda: self.sort_by_average(1))
+        self.tolowest.clicked.connect(lambda: self.sort_by_average(-1))
+        self.sort_by_class.clicked.connect(lambda: self.show_class_panel())
 
     def get_list_of_student(self):
         tmp_list_of_student = list(cursor.execute("SELECT * FROM students"))
@@ -169,7 +179,8 @@ class MyMainWindow(Ui_MainWindow):
         self.get_list_of_student()
         for student in self.list_of_student:
             tmp_rating = list(cursor.execute("SELECT * FROM rating WHERE id ='%s'" % student.id))
-            self.datatable_list.append([student, Rating(tmp_rating[0][0], tmp_rating[0][1], tmp_rating[0][2], tmp_rating[0][3])])
+            self.datatable_list.append(
+                [student, Rating(tmp_rating[0][0], tmp_rating[0][1], tmp_rating[0][2], tmp_rating[0][3])])
 
     def send_datatable_to_table(self):
         self.tableWidget.setRowCount(0)
@@ -187,16 +198,103 @@ class MyMainWindow(Ui_MainWindow):
                 data_student[1].average_score
             ]
             for i in range(8):
-                print(tmp_item[i])
-                item = QtWidgets.QTableWidgetItem(str(tmp_item[i])[0])
+                item = QtWidgets.QTableWidgetItem(str(tmp_item[i]))
                 self.tableWidget.setItem(row_position, i, item)
+
+    def sort_by_average(self, to):
+        if to == 1:
+            for i in range(len(self.datatable_list)):
+                for j in range(len(self.datatable_list)-1):
+                    if self.datatable_list[j][1].average_score < self.datatable_list[j+1][1].average_score:
+                        tmp = self.datatable_list[j][1]
+                        self.datatable_list[j][1] = self.datatable_list[j+1][1]
+                        self.datatable_list[j+1][1] = tmp
+        else:
+            for i in range(len(self.datatable_list)):
+                for j in range(len(self.datatable_list)-1):
+                    if self.datatable_list[j][1].average_score > self.datatable_list[j+1][1].average_score:
+                        tmp = self.datatable_list[j][1]
+                        self.datatable_list[j][1] = self.datatable_list[j+1][1]
+                        self.datatable_list[j+1][1] = tmp
+        self.verticalLayoutWidget.hide()
+        self.send_datatable_to_table()
+
+    def show_sort_score_pannel(self):
+        if self.verticalLayoutWidget.isVisible():
+            self.verticalLayoutWidget.hide()
+        else:
+            self.verticalLayoutWidget.show()
+
+    def get_class_list(self):
+        tmp_data = set()
+        for student in self.list_of_student:
+            tmp_data.add(student.student_class)
+
+        tmp_data2 = []
+        for data in tmp_data:
+            tmp_data2.append(data)
+        tmp_data2.sort()
+
+        for data in tmp_data2:
+            self.list_of_class.append((QtWidgets.QPushButton(self.panel_of_class), data))
+        for clas in self.list_of_class:
+            clas[0].setText(clas[1])
+            self.panel_of_class_layout.addWidget(clas[0])
+
+    def show_class_panel(self):
+        if self.panel_of_class.isVisible():
+            self.panel_of_class.hide()
+        else:
+            self.panel_of_class.show()
+
+    def send_to_table_by_class(self, what):
+        print(what)
+        ptr_list = []
+        for data in self.datatable_list:
+            if data[0].student_class == what:
+                ptr_list.append(data)
+        self.datatable_list = ptr_list
+        self.send_datatable_to_table()
+
+    def retranslateUi(self, MainWindow):
+        _translate = QtCore.QCoreApplication.translate
+        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.add_student.setText(_translate("MainWindow", "добавить ученика"))
+        self.sort_by_rating.setText(_translate("MainWindow", "сортировать по успеваемости"))
+        self.sort_by_class.setText(_translate("MainWindow", "вывести класс"))
+        self.find_student.setText(_translate("MainWindow", "найти ученика"))
+        item = self.tableWidget.horizontalHeaderItem(0)
+        item.setText(_translate("MainWindow", "id"))
+        item = self.tableWidget.horizontalHeaderItem(1)
+        item.setText(_translate("MainWindow", "Имя"))
+        item = self.tableWidget.horizontalHeaderItem(2)
+        item.setText(_translate("MainWindow", "Фамилия"))
+        item = self.tableWidget.horizontalHeaderItem(3)
+        item.setText(_translate("MainWindow", "класс"))
+        item = self.tableWidget.horizontalHeaderItem(4)
+        item.setText(_translate("MainWindow", "математика"))
+        item = self.tableWidget.horizontalHeaderItem(5)
+        item.setText(_translate("MainWindow", "физика"))
+        item = self.tableWidget.horizontalHeaderItem(6)
+        item.setText(_translate("MainWindow", "информатика"))
+        item = self.tableWidget.horizontalHeaderItem(7)
+        item.setText(_translate("MainWindow", "средний балл"))
+        self.tolowest.setText(_translate("MainWindow", "по убыванию"))
+        self.tohighest.setText(_translate("MainWindow", "по возрастанию"))
+
+
+class MyMainWindow(Ui_MainWindow):
+    def __init__(self):
+        super(Ui_MainWindow).__init__()
+        self.setupUi(MainWindow)
 
 
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
-    ui = MyMainWindow()
+    ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
     MainWindow.show()
+
     sys.exit(app.exec_())
