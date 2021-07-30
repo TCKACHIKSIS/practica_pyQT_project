@@ -270,16 +270,17 @@ class Ui_MainWindow(object):
                        (rating.id, rating.math, rating.phys, rating.comp_science, rating.average_score))
         connect.commit()
         self.get_datatable_list()
+        self.get_class_list()
         self.send_datatable_to_table()
 
     def change_student(self, change_item):
-        print("ok2")
         if len(change_item) != 0:
+            tmp_id = int(self.tableWidget.item(self.tableWidget.indexFromItem(change_item[0]).row(), 0).text())
             cursor.execute("""UPDATE students SET student_name = ? , last_name = ? , student_class = ? WHERE student_id = ?;""", (
                         self.tableWidget.item(self.tableWidget.indexFromItem(change_item[0]).row(), 1).text(),
                         self.tableWidget.item(self.tableWidget.indexFromItem(change_item[0]).row(), 2).text(),
                         self.tableWidget.item(self.tableWidget.indexFromItem(change_item[0]).row(), 3).text(),
-                        int(self.tableWidget.item(self.tableWidget.indexFromItem(change_item[0]).row(), 0).text())
+                        tmp_id
                         )
                        )
             connect.commit()
@@ -292,7 +293,9 @@ class Ui_MainWindow(object):
                                int(self.tableWidget.item(self.tableWidget.indexFromItem(change_item[0]).row(), 0).text())
                            )
                            )
-            connect.commit()
+            self.get_datatable_list()
+            self.get_class_list()
+            self.send_datatable_to_table()
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
